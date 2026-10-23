@@ -103,7 +103,7 @@ if user_input := st.chat_input("Ask FRIDAY for a lesson plan (e.g., 9th Grade Bi
         
         try:
             response_stream = client.models.generate_content_stream(
-                model="gemini-2.0-flash",
+                model="gemini-3.6-flash",
                 contents=chat_contents,
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM_PROMPT,
