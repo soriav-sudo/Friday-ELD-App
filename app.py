@@ -265,7 +265,7 @@ Friday-v5.4
 # SMART MODEL GENERATOR WITH AUTOMATIC RETRY/FALLBACK
 # ------------------------------------------------------------------------------
 def generate_friday_response(prompt):
-    candidate_models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+    candidate_models = ['gemini-3.6-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
     
     last_error = None
     for model_name in candidate_models:
