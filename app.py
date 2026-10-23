@@ -261,17 +261,35 @@ Friday-v5.4
 🔄 "Station Rotation" or "Stations" -> Generate a 3-station blended learning implementation guide!
 """
 
-# Initialize Gemini Model with FRIDAY System Instructions
-model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
-    system_instruction=FRIDAY_SYSTEM_PROMPT
-)
+# ------------------------------------------------------------------------------
+# SMART MODEL GENERATOR WITH AUTOMATIC RETRY/FALLBACK
+# ------------------------------------------------------------------------------
+def generate_friday_response(prompt):
+    candidate_models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+    
+    last_error = None
+    for model_name in candidate_models:
+        try:
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                system_instruction=FRIDAY_SYSTEM_PROMPT
+            )
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            last_error = e
+            if "404" in str(e) or "NotFound" in str(e):
+                continue
+            raise e
+            
+    raise Exception(f"Unable to connect to Gemini models: {last_error}")
 
-# Streamlit App Interface
+# ------------------------------------------------------------------------------
+# STREAMLIT USER INTERFACE
+# ------------------------------------------------------------------------------
 st.title("⚡ FRIDAY v5.4 — Master ELD & SDAIE Instructional Partner")
 st.write("Enter your lesson topic, subject, grade level, or roster details below:")
 
-# User Input Box
 user_prompt = st.text_input(
     "Lesson Topic / Prompt:",
     "Act I Hamlet, 12th Grade ELA, mixed with Levels 1 & 2 ELs"
@@ -280,5 +298,8 @@ user_prompt = st.text_input(
 if st.button("Generate FRIDAY Lesson Package"):
     if user_prompt:
         with st.spinner("FRIDAY is calibrating your ELD & SDAIE lesson package..."):
-            response = model.generate_content(user_prompt)
-            st.markdown(response.text)
+            try:
+                output_text = generate_friday_response(user_prompt)
+                st.markdown(output_text)
+            except Exception as err:
+                st.error(f"Generation error: {err}")
