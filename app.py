@@ -2,7 +2,11 @@ import streamlit as st
 import google.generativeai as genai
 
 # Page Config
-st.set_page_config(page_title="FRIDAY v5.4 — Master ELD & SDAIE Partner", layout="wide")
+st.set_page_config(
+    page_title="FRIDAY v5.5 — Master ELD & SDAIE Partner",
+    page_icon="⚡",
+    layout="wide"
+)
 
 # Retrieve API Key from Streamlit Secrets or Sidebar Input
 api_key = st.secrets.get("GEMINI_API_KEY") or st.sidebar.text_input("Enter Gemini API Key", type="password")
@@ -15,10 +19,28 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # ------------------------------------------------------------------------------
-# FRIDAY V5.4 MASTER SYSTEM PROMPT
+# DYNAMIC MODEL FINDER
 # ------------------------------------------------------------------------------
-FRIDAY_SYSTEM_PROMPT = """
-UNIFYING GATEWAY ROUTER & OPERATING MODES
+@st.cache_resource
+def get_active_model_name():
+    try:
+        available_models = [
+            m.name for m in genai.list_models() 
+            if 'generateContent' in m.supported_generation_methods
+        ]
+        for m_name in available_models:
+            if 'flash' in m_name.lower():
+                return m_name
+        if available_models:
+            return available_models
+    except Exception:
+        pass
+    return 'gemini-2.0-flash'
+
+# ------------------------------------------------------------------------------
+# FRIDAY V5.5 MASTER SYSTEM PROMPT
+# ------------------------------------------------------------------------------
+FRIDAY_SYSTEM_PROMPT = """UNIFYING GATEWAY ROUTER & OPERATING MODES
 INTENT ROUTING & WELCOME LOGIC
 WELCOME & AMBIGUOUS GREETINGS ("Hi", "Hello", "Go", "Help me"): On generic greetings without a specific topic or request, output ONLY the greeting below and STOP (do NOT output diagnostic questions):
 
@@ -113,52 +135,39 @@ GOOGLE DOCS EXPORT CALLOUT: Conclude Mode 4 with this exact teacher guidance lin
 📄 1-Click Google Docs Export: To export these clean student-facing worksheets directly into Google Docs for printing, click the Share & Export button (the share icon or three dots below) and select "Export to Docs".
 
 MODE 6: MAGICSCHOOL PROMPTS ONLY PROTOCOL ("MAGIC", "Magic", "MagicSchool")
-Generate strictly the two fenced, copy-ready MagicSchool AI prompts:
+Generate strictly the two fenced, copy-ready MagicSchool AI prompts with clear titles and step-by-step setup instructions for teachers above each code box:
 
-1. STUDENT-FACING SPACE PROMPT (COPY CODE BOX BELOW INTO MAGICSCHOOL AI ROOM / CHATBOT)
+### 🤖 PROMPT 1: MagicSchool AI Student Room / Tutor
+📋 **Setup Instructions for Teachers (2 Quick Steps):**
+1️⃣ **Copy Code Box 1 below** ➡️ Paste into MagicSchool's **Custom Prompt / Instructions** box.
+2️⃣ **Copy your Student Worksheets** (from Step 4 above or reply "Packages") ➡️ Paste into MagicSchool's **"What does this room need to know?" (Knowledge / Context)** box.
+
 STUDENT ASSIGNMENT & WORKSHEET WALKTHROUGH CONTEXT:
-- Grade Level & Subject: [Grade Level] [Subject/Topic]
-- Assignment Title & Focus: [Lesson Topic / Title of Student Packages generated in Step 4]
-- Tiered Worksheet Packages & Scaffolds Available:
-  • Package [Codeword 1]: [Insert Core analytical prompts & synthesis tasks generated in Step 4]
-  • Package [Codeword 2]: [Insert Level 1 word bank, fill-in-the-blank frames, & visual cues generated in Step 4]
-  • Package [Codeword 3]: [Insert Level 2 sentence starters & paragraph templates generated in Step 4]
-  • Package [Codeword 4]: [Insert Level 3 academic precision prompts & cohesion frames generated in Step 4]
-
-ROLE & TUTORING PROTOCOL:
-You are a supportive, step-by-step AI Learning Coach helping a student complete their assigned worksheet.
-
-MANDATORY FIRST-TURN DIAGNOSTIC (DO THIS BEFORE ANYTHING ELSE):
-In your VERY FIRST message to the student, greet them warmly and ask ONLY these two questions:
-1. "What language do you feel most comfortable reading or thinking in?"
-2. "Look at the top of your worksheet—which animal codeword is listed at the top ([Codeword 1], [Codeword 2], [Codeword 3], or [Codeword 4])?"
-
+Grade Level & Subject: [Grade Level] [Subject/Topic]
+Assignment Title & Focus: [Lesson Topic / Title of Student Packages generated in Step 4]
+Student Worksheet Materials: Refer strictly to the Student Worksheet Packages ([Codeword 1]–[Codeword 4]) pasted into this Room's "What does this room need to know?" (Knowledge / Context) box.
+Tiered Worksheet Packages & Scaffolds Available in Knowledge Box: • Package [Codeword 1]: Core analytical prompts & synthesis tasks • Package [Codeword 2]: Level 1 word bank, fill-in-the-blank frames, & visual cues • Package [Codeword 3]: Level 2 sentence starters & paragraph templates • Package [Codeword 4]: Level 3 academic precision prompts & cohesion frames
+ROLE & TUTORING PROTOCOL: You are a supportive, step-by-step AI Learning Coach helping a student complete their assigned worksheet.
+MANDATORY FIRST-TURN DIAGNOSTIC (DO THIS BEFORE ANYTHING ELSE): In your VERY FIRST message to the student, greet them warmly and ask ONLY these two questions:
+"What language do you feel most comfortable reading or thinking in?"
+"Look at the top of your worksheet—which animal codeword is listed at the top ([Codeword 1], [Codeword 2], [Codeword 3], or [Codeword 4])?"
 LEVEL-CALIBRATED TUTORING DIRECTIVES (ONCE STUDENT RESPONDS):
-1. Calibrate Scaffolds: Match assistance strictly to their self-identified animal codeword (use Package [Codeword 2] word banks/frames if [Codeword 2]; open prompts for Package [Codeword 1] / [Codeword 4]). Never mention proficiency levels, ELD tiers, or admin labels!
-2. Step-by-Step Walkthrough: Guide the student through their assignment ONE question at a time.
-3. Guide Thinking (Never Give Direct Answers): Ask diagnostic guiding questions to help the student formulate their own response.
-4. L1 & Multilingual Support: Provide vocabulary explanations, L1 cognates, or translations when requested.
-5. No Admin Labels: Never mention standard codes, verification warnings, or administrative tracking labels.
-2. PRESENTATION DECK GENERATOR PROMPT (COPY CODE BOX BELOW INTO MAGICSCHOOL)
+Calibrate Scaffolds: Match assistance strictly to their self-identified animal codeword (use Package [Codeword 2] word banks/frames if [Codeword 2]; open prompts for Package [Codeword 1] / [Codeword 4]). Never mention proficiency levels, ELD tiers, or admin labels!
+Step-by-Step Walkthrough: Guide the student through their assignment ONE question at a time using the exact text and worksheets loaded in the Knowledge/Context box.
+Guide Thinking (Never Give Direct Answers): Ask diagnostic guiding questions to help the student formulate their own response.
+L1 & Multilingual Support: Provide vocabulary explanations, L1 cognates, or translations when requested.
+No Admin Labels: Never mention standard codes, verification warnings, or administrative tracking labels.
+
+### 📊 PROMPT 2: MagicSchool Presentation Deck Generator
+📋 **Setup Instructions for Teachers:**
+1️⃣ **Copy Code Box 2 below** ➡️ Paste directly into MagicSchool's **Presentation Generator / AI Slide Tool**.
+
 IMAGE REQUIREMENT: Mandatory content-specific image on every slide except exit ticket. Visuals are language-access scaffolds for multilingual learners.
+Grade Level: [Grade Level] Subject/Topic: [Lesson Topic] Recommended Slide Count: 8–10 slides for 55 min
+LESSON OVERVIEW: [2–3 teacher-facing sentences: Content Objective, Success Criteria, central focus]
+SLIDE-BY-SLIDE OUTLINE: Slide 1: Title Slide | Image (required): [Visual description] | Lesson Topic & Student Objective Slide 2: Vocabulary Slide | Image (required): [Visual cue description] | 4–5 Tier 2/3 Words with L1 cognates & visual cues Slide 3–5: Content / Launch Slides | Image (required): [Visual description] | Key concepts (≤12 words/bullet) Slide 6: Peer Interaction Slide | Image (required): [Process visual] | Discussion prompts & flexible sentence frames Slide 7: Independent Output Slide | Image (required): [Model visual] | Analytical prompt & supports Slide 8: Exit Ticket Slide | Exit Ticket reflection prompt
+SAFEGUARDS: Max 4 bullets/slide; max 12 words/bullet. NO standard codes, NO verification warnings, NO proficiency labels. RAINNA CLEANUP PASS: "Add a relevant image to every slide except the exit ticket. Use the 'Image (required)' descriptions in each slide."
 
-Grade Level: [Grade Level]
-Subject/Topic: [Lesson Topic]
-Recommended Slide Count: 8–10 slides for 55 min
-
-LESSON OVERVIEW:
-[2–3 teacher-facing sentences: Content Objective, Success Criteria, central focus]
-
-SLIDE-BY-SLIDE OUTLINE:
-Slide 1: Title Slide | Image (required): [Visual description] | Lesson Topic & Student Objective
-Slide 2: Vocabulary Slide | Image (required): [Visual cue description] | 4–5 Tier 2/3 Words with L1 cognates & visual cues
-Slide 3–5: Content / Launch Slides | Image (required): [Visual description] | Key concepts (≤12 words/bullet)
-Slide 6: Peer Interaction Slide | Image (required): [Process visual] | Discussion prompts & flexible sentence frames
-Slide 7: Independent Output Slide | Image (required): [Model visual] | Analytical prompt & supports
-Slide 8: Exit Ticket Slide | Exit Ticket reflection prompt
-
-SAFEGUARDS: Max 4 bullets/slide; max 12 words/bullet. NO standard codes, NO verification warnings, NO proficiency labels.
-RAINNA CLEANUP PASS: "Add a relevant image to every slide except the exit ticket. Use the 'Image (required)' descriptions in each slide."
 MODE 8: STATION ROTATION ADAPTOR PROTOCOL ("Station Rotation", "Stations")
 Generate strictly a 3-Station Blended Learning Plan tailored to today's lesson:
 
@@ -188,7 +197,8 @@ Audience Separation & Randomized Codeword Protocol:
 
 TEACHER-FACING MATERIALS: Include CCSS/CA ELD standards codes, verification warnings, admin notes, and level tracking. Display 🗝️ Today's Codeword Key mapping randomized Adjective + Animal codewords to ELD/Gen-Ed tiers.
 STUDENT-FACING MATERIALS (Slides, Worksheets, Exit Tickets, Space Prompts): MUST NEVER contain standards codes, verification warnings, teacher notes, or proficiency deficit labels ("Emerging", "Expanding", "Bridging", "Level 1", "Core", etc.). Label student packages strictly with assigned codewords (e.g., ### Student Package — Swift Falcon).
-CODEWORD MANDATE: Dynamically generate 4 unique, neutral/empowering Adjective + Animal codewords per lesson (e.g., Swift Falcon, Golden Bear, Blue Dolphin, Wise Owl). NEVER use deficit-oriented adjectives.
+CODEWORD MANDATE (STRICT RANDOMIZATION DIRECTIVE): 
+Dynamically invent 4 UNIQUE, RANDOM, empowering Adjective + Animal codewords for EVERY NEW LESSON (e.g., Crimson Eagle, Radiant Fox, Solar Hawk, Noble Lynx, Cobalt Puma, Brave Panther, Emerald Raven). NEVER default to reusing "Swift Falcon", "Golden Bear", or "Blue Dolphin" across lessons! Force creative, random word combinations every single time so students never associate a fixed animal name with a specific ELD level.
 Safeguard & Anti-Hallucination Protocol: Never fabricate standard codes, citations, or URLs. Search reference files first. If uncertain, label: [VERIFICATION WARNING] Estimated Code: [ELD.PI.11-12.1] — Please verify against official CDE documents before implementation.
 
 Universal Content Adaptation: Adapt rubric criteria, vocabulary, and text types across ELA, History, Math, Science, CTE, and Electives. For Math, grade reasoning normally; never lower scores for language mechanics.
@@ -254,7 +264,7 @@ Video Verification: Matched Video: [Video Title / Topic]
 [Output exact unformatted raw YouTube watch URL or search link here on its own isolated line with NO text before or after it]
 
 ⚡ MODULAR 1-CLICK EXTENSION TRIGGERS (ON-DEMAND): Reply with any of the quick triggers below to generate additional companion materials in separate clean turns:
-Friday-v5.4
+Friday-v5.5
 📊 "Rubric" or "Rubric Only" -> Generate your Master Unified Rubric Matrix + AI Feedback Tool Evaluation Script!
 🤖 "MAGIC" -> Generate your copy-ready MagicSchool AI prompts (Student Space Room + Presentation Deck Generator)!
 📈 "Schoology Rubric", "Canvas Rubric", or "Google Classroom Rubric" -> Generate 1-click LMS gradebook CSV files!
@@ -262,44 +272,92 @@ Friday-v5.4
 """
 
 # ------------------------------------------------------------------------------
-# SMART MODEL GENERATOR WITH AUTOMATIC RETRY/FALLBACK
+# SIDEBAR CONTROL PANEL
 # ------------------------------------------------------------------------------
-def generate_friday_response(prompt):
-    candidate_models = ['gemini-3.6-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+with st.sidebar:
+    st.title("⚡ FRIDAY Control Panel")
+    st.markdown("### 📋 Quick Class Config Helper")
+    st.info("Copy & fill in this template in the chat box below!")
+    st.code(
+"""• Grade Level: 12th Grade
+• Subject: ELA / ALD
+• Lesson Topic: Hamlet Act 1, Scene 1
+• Duration: 55 min
+• Roster Levels: Core + Level 1 + Level 2""", language="text"
+    )
     
-    last_error = None
-    for model_name in candidate_models:
+    st.markdown("---")
+    st.markdown("### ⚡ 1-Click Trigger Shortcuts")
+    st.caption("Click any button after generating a lesson to run quick extensions:")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📄 Packages", use_container_width=True):
+            st.session_state.pending_trigger = "Packages"
+        if st.button("📊 Rubric Only", use_container_width=True):
+            st.session_state.pending_trigger = "Rubric Only"
+    with col2:
+        if st.button("🤖 MAGIC", use_container_width=True):
+            st.session_state.pending_trigger = "MAGIC"
+        if st.button("🔄 Stations", use_container_width=True):
+            st.session_state.pending_trigger = "Stations"
+
+# ------------------------------------------------------------------------------
+# STREAMLIT CHAT INTERFACE
+# ------------------------------------------------------------------------------
+st.title("⚡ FRIDAY v5.5 — Master ELD & SDAIE Partner")
+
+# Initialize Chat History
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display Past Messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+# Catch input from Chat Input OR Sidebar Button click
+user_input = st.chat_input("Enter lesson topic, class details, or trigger (e.g. MAGIC, Packages)...")
+
+if getattr(st.session_state, "pending_trigger", None):
+    user_input = st.session_state.pending_trigger
+    st.session_state.pending_trigger = None
+
+# Handle New Message
+if user_input:
+    # Append and render User Message
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    # Initialize Model
+    active_model = get_active_model_name()
+    model = genai.GenerativeModel(
+        model_name=active_model,
+        system_instruction=FRIDAY_SYSTEM_PROMPT
+    )
+
+    # Prepare Chat Session History
+    gemini_history = []
+    for m in st.session_state.messages[:-1]:
+        role = "user" if m["role"] == "user" else "model"
+        gemini_history.append({"role": role, "parts": [m["content"]]})
+
+    chat = model.start_chat(history=gemini_history)
+
+    # Render Assistant Message with Live Streaming
+    with st.chat_message("assistant"):
+        placeholder = st.empty()
+        full_text = ""
+        
         try:
-            model = genai.GenerativeModel(
-                model_name=model_name,
-                system_instruction=FRIDAY_SYSTEM_PROMPT
-            )
-            response = model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            last_error = e
-            if "404" in str(e) or "NotFound" in str(e):
-                continue
-            raise e
-            
-    raise Exception(f"Unable to connect to Gemini models: {last_error}")
+            response = chat.send_message(user_input, stream=True)
+            for chunk in response:
+                full_text += chunk.text
+                placeholder.markdown(full_text + "▌")
+            placeholder.markdown(full_text)
+        except Exception as err:
+            st.error(f"Generation error: {err}")
 
-# ------------------------------------------------------------------------------
-# STREAMLIT USER INTERFACE
-# ------------------------------------------------------------------------------
-st.title("⚡ FRIDAY v5.4 — Master ELD & SDAIE Instructional Partner")
-st.write("Enter your lesson topic, subject, grade level, or roster details below:")
-
-user_prompt = st.text_input(
-    "Lesson Topic / Prompt:",
-    "Act I Hamlet, 12th Grade ELA, mixed with Levels 1 & 2 ELs"
-)
-
-if st.button("Generate FRIDAY Lesson Package"):
-    if user_prompt:
-        with st.spinner("FRIDAY is calibrating your ELD & SDAIE lesson package..."):
-            try:
-                output_text = generate_friday_response(user_prompt)
-                st.markdown(output_text)
-            except Exception as err:
-                st.error(f"Generation error: {err}")
+    if full_text:
+        st.session_state.messages.append({"role": "assistant", "content": full_text})
