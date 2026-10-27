@@ -1,19 +1,24 @@
-import streamlit as st
 import google.generativeai as genai
+import streamlit as st
 
 # Page Config
 st.set_page_config(
     page_title="FRIDAY v5.5 — Master ELD & SDAIE Partner",
     page_icon="⚡",
-    layout="wide"
+    layout="wide",
 )
 
 # Retrieve API Key from Streamlit Secrets or Sidebar Input
-api_key = st.secrets.get("GEMINI_API_KEY") or st.sidebar.text_input("Enter Gemini API Key", type="password")
+api_key = st.secrets.get("GEMINI_API_KEY") or st.sidebar.text_input(
+    "Enter Gemini API Key", type="password"
+)
 
 if not api_key:
-    st.info("Please enter your Gemini API Key in Streamlit Secrets or in the sidebar to begin.")
-    st.stop()
+  st.info(
+      "Please enter your Gemini API Key in Streamlit Secrets or in the sidebar to"
+      " begin."
+  )
+  st.stop()
 
 # Configure Generative AI
 genai.configure(api_key=api_key)
@@ -256,55 +261,33 @@ Friday-v5.5
 # SIDEBAR CONTROL PANEL
 # ------------------------------------------------------------------------------
 with st.sidebar:
-    st.title("⚡ FRIDAY Control Panel")
-    st.markdown("### 📋 Quick Class Config Helper")
-    st.info("Copy & fill in this template in the chat box below!")
-    st.code(
-"""• Grade Level: 12th Grade
-• Subject: ELA / ALD
-• Lesson Topic: Hamlet Act 1, Scene 1
-• Duration: 55 min
-• Roster Levels: Core + Level 1 + Level 2""", language="text"
-    )
-    
-    st.markdown("---")
-    st.markdown("### ⚡ 1-Click Trigger Shortcuts")
-    st.caption("Click any button after generating a lesson to run quick extensions:")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📄 Packages", use_container_width=True):
-            st.session_state.pending_trigger = "Packages"
-        if st.button("📊 Rubric Only", use_container_width=True):
-            st.session_state.pending_trigger = "Rubric Only"
-    with col2:
-        if st.button("🤖 MAGIC", use_container_width=True):
-            st.session_state.pending_trigger = "MAGIC"
-        if st.button("🔄 Stations", use_container_width=True):
-            st.session_state.pending_trigger = "Stations"
+  st.title("⚡ FRIDAY Control Panel")
+  st.markdown("### 📋 Quick Class Config Helper")
+  st.info("Copy & fill in this template in the chat box below!")
+  st.code(
+      """• Grade Level: 
+• Subject: 
+• Lesson Topic: 
+• Duration: 
+• Roster Levels: 
+      language="text",
+  )
 
-# ------------------------------------------------------------------------------
-# DYNAMIC MODEL SELECTOR & STREAMING HANDLER
-# ------------------------------------------------------------------------------
-def generate_response_with_fallback(user_input, chat_history):
-    candidate_models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
-    last_error = None
-    
-    for model_name in candidate_models:
-        try:
-            model = genai.GenerativeModel(
-                model_name=model_name,
-                system_instruction=FRIDAY_SYSTEM_PROMPT
-            )
-            chat = model.start_chat(history=chat_history)
-            return chat.send_message(user_input, stream=True)
-        except Exception as e:
-            last_error = e
-            if "404" in str(e) or "NotFound" in str(e) or "available" in str(e):
-                continue
-            raise e
-            
-    raise Exception(f"Unable to connect to Gemini models: {last_error}")
+  st.markdown("---")
+  st.markdown("### ⚡ 1-Click Trigger Shortcuts")
+  st.caption("Click any button after generating a lesson to run quick extensions:")
+
+  col1, col2 = st.columns(2)
+  with col1:
+    if st.button("📄 Packages", use_container_width=True):
+      st.session_state.pending_trigger = "Packages"
+    if st.button("📊 Rubric Only", use_container_width=True):
+      st.session_state.pending_trigger = "Rubric Only"
+  with col2:
+    if st.button("🤖 MAGIC", use_container_width=True):
+      st.session_state.pending_trigger = "MAGIC"
+    if st.button("🔄 Stations", use_container_width=True):
+      st.session_state.pending_trigger = "Stations"
 
 # ------------------------------------------------------------------------------
 # STREAMLIT CHAT INTERFACE
@@ -313,46 +296,57 @@ st.title("⚡ FRIDAY v5.5 — Master ELD & SDAIE Partner")
 
 # Initialize Chat History
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+  st.session_state.messages = []
 
 # Display Past Messages
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+  with st.chat_message(msg["role"]):
+    st.markdown(msg["content"])
 
 # Catch input from Chat Input OR Sidebar Button click
-user_input = st.chat_input("Enter lesson topic, class details, or trigger (e.g. MAGIC, Packages)...")
+user_input = st.chat_input(
+    "Enter lesson topic, class details, or trigger (e.g. MAGIC, Packages)..."
+)
 
 if getattr(st.session_state, "pending_trigger", None):
-    user_input = st.session_state.pending_trigger
-    st.session_state.pending_trigger = None
+  user_input = st.session_state.pending_trigger
+  st.session_state.pending_trigger = None
 
 # Handle New Message
 if user_input:
-    # Append and render User Message
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
+  # Append and render User Message
+  st.session_state.messages.append({"role": "user", "content": user_input})
+  with st.chat_message("user"):
+    st.markdown(user_input)
 
-    # Prepare Chat Session History
-    gemini_history = []
-    for m in st.session_state.messages[:-1]:
-        role = "user" if m["role"] == "user" else "model"
-        gemini_history.append({"role": role, "parts": [m["content"]]})
+  # Initialize Model explicitly with gemini-3.8-flash
+  model = genai.GenerativeModel(
+      model_name="gemini-3.8-flash", system_instruction=FRIDAY_SYSTEM_PROMPT
+  )
 
-    # Render Assistant Message with Live Streaming & Automatic Model Fallback
-    with st.chat_message("assistant"):
-        placeholder = st.empty()
-        full_text = ""
-        
-        try:
-            response = generate_response_with_fallback(user_input, gemini_history)
-            for chunk in response:
-                full_text += chunk.text
-                placeholder.markdown(full_text + "▌")
-            placeholder.markdown(full_text)
-        except Exception as err:
-            st.error(f"Generation error: {err}")
+  # Prepare Chat Session History
+  gemini_history = []
+  for m in st.session_state.messages[:-1]:
+    role = "user" if m["role"] == "user" else "model"
+    gemini_history.append({"role": role, "parts": [m["content"]]})
 
-    if full_text:
-        st.session_state.messages.append({"role": "assistant", "content": full_text})
+  chat = model.start_chat(history=gemini_history)
+
+  # Render Assistant Message with Live Streaming
+  with st.chat_message("assistant"):
+    placeholder = st.empty()
+    full_text = ""
+
+    try:
+      response = chat.send_message(user_input, stream=True)
+      for chunk in response:
+        full_text += chunk.text
+        placeholder.markdown(full_text + "▌")
+      placeholder.markdown(full_text)
+    except Exception as err:
+      st.error(f"Generation error: {err}")
+
+  if full_text:
+    st.session_state.messages.append(
+        {"role": "assistant", "content": full_text}
+    )
