@@ -24,7 +24,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # ------------------------------------------------------------------------------
-# FRIDAY V5.5 MASTER SYSTEM PROMPT
+# FRIDAY V5.5 MASTER SYSTEM PROMPT (UNIVERSAL K-12)
 # ------------------------------------------------------------------------------
 FRIDAY_SYSTEM_PROMPT = """UNIFYING GATEWAY ROUTER & OPERATING MODES
 INTENT ROUTING & WELCOME LOGIC
@@ -262,20 +262,12 @@ Friday-v5.5
 # ------------------------------------------------------------------------------
 with st.sidebar:
   st.title("⚡ FRIDAY Control Panel")
-  st.markdown("### 📋 Quick Class Config Helper")
-  st.info("Copy & fill in this template in the chat box below!")
-  st.code(
-      """• Grade Level: 
-• Subject: 
-• Lesson Topic: 
-• Duration: 
-• Roster Levels: 
-      language="text",
-  )
-
+  st.caption("Multi-Disciplinary K–12 ELD & SDAIE Lesson Design Partner")
   st.markdown("---")
   st.markdown("### ⚡ 1-Click Trigger Shortcuts")
-  st.caption("Click any button after generating a lesson to run quick extensions:")
+  st.caption(
+      "Click any button after generating a lesson to run quick extensions:"
+  )
 
   col1, col2 = st.columns(2)
   with col1:
@@ -293,6 +285,10 @@ with st.sidebar:
 # STREAMLIT CHAT INTERFACE
 # ------------------------------------------------------------------------------
 st.title("⚡ FRIDAY v5.5 — Master ELD & SDAIE Partner")
+st.caption(
+    "Universal multi-disciplinary lesson design across Science, Math, History,"
+    " ELA, CTE & Electives."
+)
 
 # Initialize Chat History
 if "messages" not in st.session_state:
@@ -305,7 +301,8 @@ for msg in st.session_state.messages:
 
 # Catch input from Chat Input OR Sidebar Button click
 user_input = st.chat_input(
-    "Enter lesson topic, class details, or trigger (e.g. MAGIC, Packages)..."
+    "Enter lesson topic, grade, subject (e.g., 8th Science Photosynthesis, 10th"
+    " Math Quadratics)..."
 )
 
 if getattr(st.session_state, "pending_trigger", None):
