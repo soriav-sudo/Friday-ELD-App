@@ -8,10 +8,11 @@ st.set_page_config(
     layout="wide",
 )
 
-# Custom Dark Theme Styling (Matching website code.docx palette)
+# Custom High-Contrast Dark Theme Styling (Fixes Chat Input & Form Visibility)
 st.markdown(
     """
 <style>
+    /* Main Canvas & Sidebar */
     .stApp {
         background-color: #020617;
         color: #f8fafc;
@@ -23,11 +24,32 @@ st.markdown(
     h1, h2, h3 {
         color: #38bdf8 !important;
     }
+    
+    /* Sidebar Form Selectboxes & Inputs */
     div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
-        background-color: #020617 !important;
+        background-color: #0f172a !important;
         border-color: #334155 !important;
-        color: #f8fafc !important;
+        color: #ffffff !important;
     }
+    
+    /* High-Contrast Chat Input Box Fix */
+    div[data-testid="stChatInput"] {
+        background-color: #0f172a !important;
+        border: 1px solid #38bdf8 !important;
+        border-radius: 10px !important;
+    }
+    div[data-testid="stChatInput"] textarea {
+        background-color: #0f172a !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        font-size: 15px !important;
+    }
+    div[data-testid="stChatInput"] textarea::placeholder {
+        color: #94a3b8 !important;
+        -webkit-text-fill-color: #94a3b8 !important;
+    }
+    
+    /* Fast-Pass Sidebar Buttons */
     .stButton > button {
         background-color: #1e293b;
         border: 1px solid #334155;
