@@ -139,7 +139,7 @@ Dynamically invent 4 UNIQUE, RANDOM, empowering Adjective + Animal codewords for
 """
 
 # ------------------------------------------------------------------------------
-# SIDEBAR CONTROL PANEL (DROPDOWNS WITH DYNAMIC "OTHER" TRIGGER)
+# SIDEBAR CONTROL PANEL (DYNAMIC DROPDOWNS FOR SUBJECT & DURATION)
 # ------------------------------------------------------------------------------
 with st.sidebar:
   st.title("⚡ FRIDAY")
@@ -148,6 +148,7 @@ with st.sidebar:
 
   st.markdown("### 📋 CLASS CONFIG")
 
+  # 1. Grade Level
   cfg_grade = st.selectbox(
       "Grade Level",
       [
@@ -161,6 +162,7 @@ with st.sidebar:
       index=0,
   )
 
+  # 2. Subject / Course (With Dynamic "Other" Trigger)
   selected_subject_option = st.selectbox(
       "Subject / Course",
       [
@@ -176,7 +178,6 @@ with st.sidebar:
       index=0,
   )
 
-  # Dynamic trigger for custom subjects
   if selected_subject_option == "Other (Specify below)":
     cfg_subject = st.text_input(
         "Specify Subject / Course",
@@ -187,11 +188,29 @@ with st.sidebar:
   else:
     cfg_subject = selected_subject_option
 
-  cfg_duration = st.selectbox(
+  # 3. Class Duration (With Dynamic "Other" Trigger)
+  selected_duration_option = st.selectbox(
       "Class Duration",
-      ["55 minutes", "50 minutes", "90 minutes (Block)"],
+      [
+          "55 minutes (Standard)",
+          "50 minutes",
+          "45 minutes",
+          "60 minutes",
+          "90 minutes (Block)",
+          "Other (Specify below)",
+      ],
       index=0,
   )
+
+  if selected_duration_option == "Other (Specify below)":
+    cfg_duration = st.text_input(
+        "Specify Class Duration",
+        placeholder="e.g., 40 min, 75 min block, 120 min lab",
+    )
+    if not cfg_duration:
+      cfg_duration = "Custom Schedule"
+  else:
+    cfg_duration = selected_duration_option
 
   st.markdown("**Roster Levels Included**")
   lvl_core = st.checkbox("Core / Benchmark Target", value=True)
