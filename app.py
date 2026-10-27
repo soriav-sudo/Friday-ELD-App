@@ -19,25 +19,6 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # ------------------------------------------------------------------------------
-# DYNAMIC MODEL FINDER
-# ------------------------------------------------------------------------------
-@st.cache_resource
-def get_active_model_name():
-    try:
-        available_models = [
-            m.name for m in genai.list_models() 
-            if 'generateContent' in m.supported_generation_methods
-        ]
-        for m_name in available_models:
-            if 'flash' in m_name.lower():
-                return m_name
-        if available_models:
-            return available_models
-    except Exception:
-        pass
-    return 'gemini-2.0-flash'
-
-# ------------------------------------------------------------------------------
 # FRIDAY V5.5 MASTER SYSTEM PROMPT
 # ------------------------------------------------------------------------------
 FRIDAY_SYSTEM_PROMPT = """UNIFYING GATEWAY ROUTER & OPERATING MODES
@@ -303,6 +284,29 @@ with st.sidebar:
             st.session_state.pending_trigger = "Stations"
 
 # ------------------------------------------------------------------------------
+# DYNAMIC MODEL SELECTOR & STREAMING HANDLER
+# ------------------------------------------------------------------------------
+def generate_response_with_fallback(user_input, chat_history):
+    candidate_models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+    last_error = None
+    
+    for model_name in candidate_models:
+        try:
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                system_instruction=FRIDAY_SYSTEM_PROMPT
+            )
+            chat = model.start_chat(history=chat_history)
+            return chat.send_message(user_input, stream=True)
+        except Exception as e:
+            last_error = e
+            if "404" in str(e) or "NotFound" in str(e) or "available" in str(e):
+                continue
+            raise e
+            
+    raise Exception(f"Unable to connect to Gemini models: {last_error}")
+
+# ------------------------------------------------------------------------------
 # STREAMLIT CHAT INTERFACE
 # ------------------------------------------------------------------------------
 st.title("⚡ FRIDAY v5.5 — Master ELD & SDAIE Partner")
@@ -330,28 +334,19 @@ if user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Initialize Model
-    active_model = get_active_model_name()
-    model = genai.GenerativeModel(
-        model_name=active_model,
-        system_instruction=FRIDAY_SYSTEM_PROMPT
-    )
-
     # Prepare Chat Session History
     gemini_history = []
     for m in st.session_state.messages[:-1]:
         role = "user" if m["role"] == "user" else "model"
         gemini_history.append({"role": role, "parts": [m["content"]]})
 
-    chat = model.start_chat(history=gemini_history)
-
-    # Render Assistant Message with Live Streaming
+    # Render Assistant Message with Live Streaming & Automatic Model Fallback
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_text = ""
         
         try:
-            response = chat.send_message(user_input, stream=True)
+            response = generate_response_with_fallback(user_input, gemini_history)
             for chunk in response:
                 full_text += chunk.text
                 placeholder.markdown(full_text + "▌")
