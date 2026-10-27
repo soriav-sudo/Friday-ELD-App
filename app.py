@@ -8,11 +8,10 @@ st.set_page_config(
     layout="wide",
 )
 
-# Custom Styling matching website code.docx (#0f172a sidebar, #020617 dark canvas, #0284c7 accents)
+# Custom Dark Theme Styling (Matching website code.docx palette)
 st.markdown(
     """
 <style>
-    /* Dark Theme Styling */
     .stApp {
         background-color: #020617;
         color: #f8fafc;
@@ -21,20 +20,14 @@ st.markdown(
         background-color: #0f172a;
         border-right: 1px solid #1e293b;
     }
-    
-    /* Headers & Text Colors */
     h1, h2, h3 {
         color: #38bdf8 !important;
     }
-    
-    /* Form Dropdowns & Inputs */
     div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
         background-color: #020617 !important;
         border-color: #334155 !important;
         color: #f8fafc !important;
     }
-    
-    /* Fast-Pass Sidebar Buttons */
     .stButton > button {
         background-color: #1e293b;
         border: 1px solid #334155;
@@ -146,7 +139,7 @@ Dynamically invent 4 UNIQUE, RANDOM, empowering Adjective + Animal codewords for
 """
 
 # ------------------------------------------------------------------------------
-# SIDEBAR CONTROL PANEL (FORM CONTROLS & FAST-PASS)
+# SIDEBAR CONTROL PANEL (DROPDOWNS WITH DYNAMIC "OTHER" TRIGGER)
 # ------------------------------------------------------------------------------
 with st.sidebar:
   st.title("⚡ FRIDAY")
@@ -154,6 +147,7 @@ with st.sidebar:
   st.markdown("---")
 
   st.markdown("### 📋 CLASS CONFIG")
+
   cfg_grade = st.selectbox(
       "Grade Level",
       [
@@ -167,7 +161,31 @@ with st.sidebar:
       index=0,
   )
 
-  cfg_subject = st.text_input("Subject / Course", value="ELA / ALD / Science")
+  selected_subject_option = st.selectbox(
+      "Subject / Course",
+      [
+          "ELA / ALD (English & Academic Language Dev)",
+          "Mathematics (Math 6–8, Algebra, Geometry)",
+          "Science (Biology, Chemistry, Physics, NGSS)",
+          "Social Science / History (US/World History, Civics)",
+          "Career Technical Education (CTE / Tech)",
+          "Visual & Performing Arts / Electives",
+          "World Languages",
+          "Other (Specify below)",
+      ],
+      index=0,
+  )
+
+  # Dynamic trigger for custom subjects
+  if selected_subject_option == "Other (Specify below)":
+    cfg_subject = st.text_input(
+        "Specify Subject / Course",
+        placeholder="e.g., Physical Education, Health, Leadership",
+    )
+    if not cfg_subject:
+      cfg_subject = "Custom Content Area"
+  else:
+    cfg_subject = selected_subject_option
 
   cfg_duration = st.selectbox(
       "Class Duration",
@@ -200,8 +218,7 @@ with st.sidebar:
 # ------------------------------------------------------------------------------
 st.title("⚡ FRIDAY Master ELD Engine")
 st.caption(
-    "Multi-disciplinary lesson design partner across Science, Math, ELA,"
-    " Social Studies, CTE & Electives."
+    "Universal multi-disciplinary lesson design partner across all K–12 subjects."
 )
 
 if "messages" not in st.session_state:
@@ -211,7 +228,10 @@ for msg in st.session_state.messages:
   with st.chat_message(msg["role"]):
     st.markdown(msg["content"])
 
-user_input = st.chat_input("Enter lesson topic (e.g., Photosynthesis)...")
+user_input = st.chat_input(
+    "Enter lesson topic or concept (e.g., Photosynthesis, Quadratic"
+    " Formula)..."
+)
 
 if getattr(st.session_state, "pending_trigger", None):
   user_input = st.session_state.pending_trigger
