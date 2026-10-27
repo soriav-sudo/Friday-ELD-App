@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# Custom High-Contrast Dark Theme Styling (Fixes Chat Input & Form Visibility)
+# Custom High-Contrast Dark Theme Styling
 st.markdown(
     """
 <style>
@@ -321,10 +321,11 @@ if user_input:
     full_text = ""
 
     try:
-      response = chat.send_message(contextual_user_prompt, stream=True)
-      for chunk in response:
-        full_text += chunk.text
-        placeholder.markdown(full_text + "▌")
+      with st.spinner("Thinking..."):
+        response = chat.send_message(contextual_user_prompt, stream=True)
+        for chunk in response:
+          full_text += chunk.text
+          placeholder.markdown(full_text + "▌")
       placeholder.markdown(full_text)
     except Exception as err:
       st.error(f"Generation error: {err}")
