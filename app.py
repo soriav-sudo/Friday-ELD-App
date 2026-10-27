@@ -32,7 +32,7 @@ st.markdown(
         color: #ffffff !important;
     }
     
-    /* High-Contrast Chat Input Box Fix */
+    /* High-Contrast Chat Input Box */
     div[data-testid="stChatInput"] {
         background-color: #0f172a !important;
         border: 1px solid #38bdf8 !important;
@@ -84,6 +84,18 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
+# Initialize Session State Variables
+if "messages" not in st.session_state:
+  st.session_state.messages = []
+if "pending_trigger" not in st.session_state:
+  st.session_state.pending_trigger = None
+
+
+# Callback Function for Fast-Pass Buttons
+def set_trigger(trigger_name):
+  st.session_state.pending_trigger = trigger_name
+
+
 # ------------------------------------------------------------------------------
 # MASTER FRIDAY SYSTEM PROMPT
 # ------------------------------------------------------------------------------
@@ -109,6 +121,10 @@ PENDING UPLOAD CATCH (MANDATORY PAUSE & INSTRUCTION FOR FILE UPLOADS): If the us
 AUTO-EXECUTION RULE (MODULAR FAST-PASS MODE 1 GENERATION): Execute MODE 1 IMMEDIATELY ONLY IF the user provides BOTH: (1) A specific Lesson Topic/Resource/File, AND (2) Basic context (Grade Level or Class Setting). Lead with the Curriculum Grounding Callout Banner, followed by: "Here is your 5-Step Core Differentiated Lesson & Assessment Package!" and generate Steps 1–5 in Fast-Pass mode (~15-second generation time).
 
 📄 Curriculum Grounding Note: Generated using standard CA curriculum frameworks. Have a specific textbook excerpt, PDF, slides, or notes you'd rather use? Simply attach or paste them below, and I'll re-tune this entire package directly to your material!
+
+TRIGGER SAFETY CATCH: If a quick trigger ("Packages", "Student Package Only", "Rubric Only", "Schoology Rubric", "Canvas Rubric", "Google Classroom Rubric", "LMS Rubric", "MAGIC", or "Station Rotation") is entered before any topic/context is provided, output ONLY:
+
+"I'd be happy to generate your standalone [Requested Item]! To make sure it's accurate, what grade level, subject, or topic should I create this for?"
 
 MODE EXECUTION TRIGGERS:
 Core Lesson (Mode 1): Lead with Grounding Banner + "Here is your 5-Step Core Differentiated Lesson & Assessment Package!" (Fast-Pass Steps 1–5)
@@ -161,7 +177,7 @@ Dynamically invent 4 UNIQUE, RANDOM, empowering Adjective + Animal codewords for
 """
 
 # ------------------------------------------------------------------------------
-# SIDEBAR CONTROL PANEL (DYNAMIC DROPDOWNS FOR SUBJECT & DURATION)
+# SIDEBAR CONTROL PANEL (DROPDOWNS & CALLBACK-ENABLED BUTTONS)
 # ------------------------------------------------------------------------------
 with st.sidebar:
   st.title("⚡ FRIDAY")
@@ -243,16 +259,36 @@ with st.sidebar:
   st.markdown("---")
   st.markdown("### ⚡ MODE FAST-PASS")
 
-  if st.button("📦 Student Packages Only", use_container_width=True):
-    st.session_state.pending_trigger = "Packages"
-  if st.button("🤖 MagicSchool AI Prompts", use_container_width=True):
-    st.session_state.pending_trigger = "MAGIC"
-  if st.button("📊 Standalone Rubric Suite", use_container_width=True):
-    st.session_state.pending_trigger = "Rubric Only"
-  if st.button("📈 LMS Rubric CSV", use_container_width=True):
-    st.session_state.pending_trigger = "Schoology Rubric"
-  if st.button("🔄 3-Station Rotation Plan", use_container_width=True):
-    st.session_state.pending_trigger = "Stations"
+  st.button(
+      "📦 Student Packages Only",
+      use_container_width=True,
+      on_click=set_trigger,
+      args=("Packages",),
+  )
+  st.button(
+      "🤖 MagicSchool AI Prompts",
+      use_container_width=True,
+      on_click=set_trigger,
+      args=("MAGIC",),
+  )
+  st.button(
+      "📊 Standalone Rubric Suite",
+      use_container_width=True,
+      on_click=set_trigger,
+      args=("Rubric Only",),
+  )
+  st.button(
+      "📈 LMS Rubric CSV",
+      use_container_width=True,
+      on_click=set_trigger,
+      args=("Schoology Rubric",),
+  )
+  st.button(
+      "🔄 3-Station Rotation Plan",
+      use_container_width=True,
+      on_click=set_trigger,
+      args=("Stations",),
+  )
 
 # ------------------------------------------------------------------------------
 # MAIN CHAT STREAM INTERFACE
@@ -262,19 +298,18 @@ st.caption(
     "Universal multi-disciplinary lesson design partner across all K–12 subjects."
 )
 
-if "messages" not in st.session_state:
-  st.session_state.messages = []
-
+# Display Existing Chat History
 for msg in st.session_state.messages:
   with st.chat_message(msg["role"]):
     st.markdown(msg["content"])
 
+# Capture User Input from Chat Bar OR Sidebar Button Callbacks
 user_input = st.chat_input(
     "Enter lesson topic or concept (e.g., Photosynthesis, Quadratic"
     " Formula)..."
 )
 
-if getattr(st.session_state, "pending_trigger", None):
+if st.session_state.pending_trigger:
   user_input = st.session_state.pending_trigger
   st.session_state.pending_trigger = None
 
@@ -323,9 +358,12 @@ if user_input:
     try:
       with st.spinner("Thinking..."):
         response = chat.send_message(contextual_user_prompt, stream=True)
-        for chunk in response:
+
+      for chunk in response:
+        if chunk.text:
           full_text += chunk.text
           placeholder.markdown(full_text + "▌")
+
       placeholder.markdown(full_text)
     except Exception as err:
       st.error(f"Generation error: {err}")
